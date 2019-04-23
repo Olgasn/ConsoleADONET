@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,10 @@ namespace ConsoleADONET
             float fuelDensity;
             string result = "";
             Random randObj = new Random(1);
+            string specifier="G";
+            CultureInfo culture= CultureInfo.InvariantCulture;
+
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
@@ -40,35 +45,35 @@ namespace ConsoleADONET
                         string[] material_voc = { "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун", "Алюминий", "Золото", "Дерево", "Керамика" };//словарь названий видов топлива
                         int count_tank_voc = tank_voc.GetLength(0);
                         int count_material_voc = material_voc.GetLength(0);
-                        command.CommandText = "INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES";
+                        string strSql= "INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES ";
                         for (int tankID = 1; tankID <= tanks_number; tankID++)
                         {
-                            tankType = tank_voc[randObj.Next(count_tank_voc)] + tankID.ToString();
-                            tankMaterial = material_voc[randObj.Next(count_material_voc)];
+                            tankType = "'"+tank_voc[randObj.Next(count_tank_voc)] + tankID.ToString()+"'";
+                            tankMaterial = "'"+material_voc[randObj.Next(count_material_voc)]+ "'";
                             tankWeight = 500 * (float)randObj.NextDouble();
                             tankVolume = 200 * (float)randObj.NextDouble();
-                            command.CommandText = command.CommandText + "(" + tankType + ", " + tankWeight + ", " + tankVolume + ", " + tankMaterial + "), ";
+                            strSql = strSql + "(" + tankType + ", " + tankWeight.ToString(specifier, culture) + ", " + tankVolume.ToString(specifier, culture) + ", " + tankMaterial + "), ";
                         }
-                        command.CommandText = command.CommandText.TrimEnd(new Char[] { ',', ' ' }) + ";";
+                        command.CommandText = strSql.TrimEnd(new Char[] { ',', ' ' }) + ";";
                         //отправляет команду на вставку в базу данных
                         command.ExecuteNonQuery();
 
                         //Заполнение таблицы видов топлива
                         string[] fuel_voc = { "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_" };
                         int count_fuel_voc = fuel_voc.GetLength(0);
-                        command.CommandText = "INSERT INTO Fuels (FuelType, FuelDensity) VALUES";
+                        strSql = "INSERT INTO Fuels (FuelType, FuelDensity) VALUES";
                         for (int fuelID = 1; fuelID <= fuels_number; fuelID++)
                         {
-                            fuelType = fuel_voc[randObj.Next(count_fuel_voc)] + fuelID.ToString();
+                            fuelType = "'"+ fuel_voc[randObj.Next(count_fuel_voc)] + fuelID.ToString()+ "'";
                             fuelDensity = 2 * (float)randObj.NextDouble();
-                            command.CommandText = command.CommandText + "(" + fuelType + ", " + fuelDensity + "), ";
+                            strSql = strSql + "(" + fuelType + ", " + fuelDensity.ToString(specifier, culture) + "), ";
                         }
-                        command.CommandText = command.CommandText.TrimEnd(new Char[] { ',', ' ' }) + ";";
+                        command.CommandText = strSql.TrimEnd(new Char[] { ',', ' ' }) + ";";
                         //отправляет команду на вставку в базу данных
                         command.ExecuteNonQuery();
 
                         //Заполнение таблицы операций
-                        command.CommandText = "INSERT INTO Fuels (TankID, FuelID, Inc_Exp, Date) VALUES";
+                        strSql = "INSERT INTO Fuels (TankID, FuelID, Inc_Exp, Date) VALUES";
                         for (int operationID = 1; operationID <= operations_number; operationID++)
                         {
                             int tankID = randObj.Next(1, tanks_number - 1);
@@ -76,9 +81,9 @@ namespace ConsoleADONET
                             int inc_exp = randObj.Next(200) - 100;
                             DateTime today = DateTime.Now.Date;
                             DateTime operationdate = today.AddDays(-operationID);
-                            command.CommandText = command.CommandText + "(" + tankID + ", " + fuelID + ", " + inc_exp + ", " + operationdate + "), ";
+                            strSql = strSql + "(" + tankID + ", " + fuelID + ", " + inc_exp.ToString(specifier, culture) + ", " + operationdate + "), ";
                         }
-                        command.CommandText = command.CommandText.TrimEnd(new Char[] { ',', ' ' }) + ";";
+                        command.CommandText = strSql.TrimEnd(new Char[] { ',', ' ' }) + ";";
                         //отправляет команду на вставку в базу данных
                         command.ExecuteNonQuery();
 

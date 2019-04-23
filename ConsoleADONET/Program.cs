@@ -17,10 +17,13 @@ namespace ConsoleADONET
             string сonnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["toplivoConnectionString"].ConnectionString;
             //Инициализация базы данных
             string InitializeResult = DbInitializer.Initialize(сonnectionString);
-            //Открытие соединения для выполнения команд
-            using (SqlConnection connection = new SqlConnection(сonnectionString))
+            // Создание подключения
+            SqlConnection connection = new SqlConnection(сonnectionString);
+            try
             {
+                // Открываем подключение для выполенеия команд
                 connection.Open();
+                Console.WriteLine("Подключение открыто");
 
                 Console.WriteLine("====== Будет выполнена выборка данных (нажмите любую клавишу) ========");
                 Console.ReadKey();
@@ -31,9 +34,25 @@ namespace ConsoleADONET
                 Console.WriteLine("====== Будет выполнена выборка данных (нажмите любую клавишу) ========");
                 Console.ReadKey();
                 Print(Select3(connection));
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                // закрываем подключение
+                connection.Close();
+                Console.WriteLine("Подключение закрыто...");
+            }
 
-            }
-            }
+            Console.Read();
+
+
+
+        }
+
+
 
         static void Print(IList items)
         {
@@ -79,6 +98,8 @@ namespace ConsoleADONET
         static string Delete(SqlConnection connection)
         {
             string message = "";
+
+
             //todo
             return message;
 
@@ -87,7 +108,24 @@ namespace ConsoleADONET
         {
             List<string> results= new List<string>();
             //todo
+            SqlCommand sqlCommand = new SqlCommand("SELECT TOP 5 * FROM Fuels;",connection);
+            SqlDataReader reader = sqlCommand.ExecuteReader();
+            if (reader.HasRows) // если есть данные
+            {
+                // выводим названия столбцов
+                Console.WriteLine("{0}\t{1}\t{2}", reader.GetName(0), reader.GetName(1), reader.GetName(2));
 
+                while (reader.Read()) // построчно считываем данные
+                {
+                    object fld1 = reader.GetValue(0);
+                    object fld2 = reader.GetValue(1);
+                    object fld3 = reader.GetValue(2);
+
+                    Console.WriteLine("{0} \t{1} \t{2}", fld1, fld2, fld3);
+                }
+            }
+
+            reader.Close();
             return results;
         }
         static IList Select2(SqlConnection connection)
