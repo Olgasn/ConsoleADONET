@@ -6,6 +6,25 @@
 CREATE DATABASE toplivo
 
 GO
+
+ALTER DATABASE toplivo SET RECOVERY SIMPLE
+GO
+
+USE toplivo
+-- ================================================
+-- создание таблиц
+CREATE TABLE dbo.Fuels (FuelID int IDENTITY(1,1) NOT NULL PRIMARY KEY, FuelType nvarchar(50), FuelDensity real) -- виды топлива
+CREATE TABLE dbo.Tanks (TankID int IDENTITY(1,1) NOT NULL PRIMARY KEY, TankType nvarchar(20), TankVolume real, TankWeight real, TankMaterial nvarchar(20)) -- емкости
+CREATE TABLE dbo.Operations (OperationID int IDENTITY(1,1) NOT NULL PRIMARY KEY, FuelID int, TankID int, Inc_Exp real, [Date] date) -- операции
+-- Добавление связей между таблицами
+ALTER TABLE dbo.Operations  WITH CHECK ADD  CONSTRAINT FK_Operations_Fuels FOREIGN KEY(FuelID)
+REFERENCES dbo.Fuels (FuelID) ON DELETE CASCADE
+GO
+ALTER TABLE dbo.Operations  WITH CHECK ADD  CONSTRAINT FK_Operations_Tanks FOREIGN KEY(TankID)
+REFERENCES dbo.Tanks (TankID) ON DELETE CASCADE
+GO
+
+
 -- ================================================
 -- создание представления для отбора данных всех операций
 CREATE VIEW [dbo].[View_AllOperations]
