@@ -12,7 +12,7 @@ namespace ConsoleADONET
     {
         public static string Initialize(string connectionString)
         {
-                                                  
+            //Инициализация перменных                                                  
             int tanks_number = 75;
             int fuels_number = 75;
             int operations_number = 3000;
@@ -30,19 +30,22 @@ namespace ConsoleADONET
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
+                // Открытие соединения
                 connection.Open();
                 SqlCommand check_Fuels = new SqlCommand("SELECT COUNT(*) FROM [Fuels]", connection);
                 int RecordsExist = (int)check_Fuels.ExecuteScalar();
                 if (RecordsExist > 0)
                 {
+                    // Открытие транзакции для выполнения команд вставки данных
                     SqlTransaction transaction = connection.BeginTransaction();
+
                     SqlCommand command = connection.CreateCommand();
                     command.Transaction = transaction;
                     try
                     {
                         //Заполнение таблицы емкостей
                         string[] tank_voc = { "Цистерна_", "Ведро_", "Бак_", "Фляга_", "Цистерна_", "Стакан_" };//словарь названий емкостей
-                        string[] material_voc = { "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун", "Алюминий", "Золото", "Дерево", "Керамика" };//словарь названий видов топлива
+                        string[] material_voc = { "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун", "Алюминий", "Золото", "Дерево", "Керамика" };//словарь названий материалов емкостей
                         int count_tank_voc = tank_voc.GetLength(0);
                         int count_material_voc = material_voc.GetLength(0);
                         string strSql= "INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES ";
@@ -59,7 +62,7 @@ namespace ConsoleADONET
                         command.ExecuteNonQuery();
 
                         //Заполнение таблицы видов топлива
-                        string[] fuel_voc = { "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_" };
+                        string[] fuel_voc = { "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_" };//словарь названий видов топлива
                         int count_fuel_voc = fuel_voc.GetLength(0);
                         strSql = "INSERT INTO Fuels (FuelType, FuelDensity) VALUES";
                         for (int fuelID = 1; fuelID <= fuels_number; fuelID++)
@@ -91,6 +94,7 @@ namespace ConsoleADONET
                         transaction.Commit();
 
                     }
+                    // Обработка ошибок внутри транзакции
                     catch (Exception ex)
                     {
                         result = ex.Message;

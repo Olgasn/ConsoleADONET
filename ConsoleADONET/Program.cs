@@ -38,10 +38,12 @@ namespace ConsoleADONET
                 //Console.ReadKey();
                 //Print(Insert(connection,"procedureName"));
             }
+            // Обработка ошибок соединения
             catch (SqlException ex)
             {
                 Console.WriteLine(ex.Message);
             }
+            // Закрытие соединения с базой данных
             finally
             {
                 // закрываем подключение
