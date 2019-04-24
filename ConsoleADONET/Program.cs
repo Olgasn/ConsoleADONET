@@ -21,7 +21,7 @@ namespace ConsoleADONET
             SqlConnection connection = new SqlConnection(сonnectionString);
             try
             {
-                // Открываем подключение для выполенеия команд
+                // Открываем подключение для выполенения команд
                 connection.Open();
                 Console.WriteLine("Подключение открыто");
 
@@ -34,6 +34,9 @@ namespace ConsoleADONET
                 Console.WriteLine("====== Будет выполнена выборка данных (нажмите любую клавишу) ========");
                 Console.ReadKey();
                 Print(Select3(connection));
+                //Console.WriteLine("====== Будет выполнена вставка данных (нажмите любую клавишу) ========");
+                //Console.ReadKey();
+                //Print(Insert(connection,"procedureName"));
             }
             catch (SqlException ex)
             {
@@ -65,16 +68,24 @@ namespace ConsoleADONET
             Console.ReadKey();
         }
 
-        static string Insert(SqlConnection connection)
+        static string Insert(SqlConnection connection, String procedureName)
         {
             string message = "";
             SqlTransaction transaction = connection.BeginTransaction();
-            SqlCommand command = connection.CreateCommand();
+            SqlCommand command = new SqlCommand(procedureName, connection);
             command.Transaction = transaction;
             try
             {
 
-                command.CommandText = "";
+                //command.CommandType = System.Data.CommandType.StoredProcedure;
+                //SqlParameter nameParam = new SqlParameter
+                //{
+                //    ParameterName = "@name",
+                //    Value = name
+                //};
+                ////добавляем параметр
+                //command.Parameters.Add(nameParam);
+
                 //отправляет команду в базу данных
                 command.ExecuteNonQuery();
 
