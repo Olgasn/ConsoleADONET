@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Data;
-using System.Data.SqlClient;
-using System.Configuration;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 
 namespace ConsoleADONET
 {
@@ -105,7 +103,7 @@ namespace ConsoleADONET
 
             }
             return message;
- 
+
         }
 
         static string Delete(SqlConnection connection)
@@ -119,9 +117,9 @@ namespace ConsoleADONET
         }
         static IList Select1(SqlConnection connection)
         {
-            List<string> results= new List<string>();
+            List<string> results = new List<string>();
             //todo
-            SqlCommand sqlCommand = new SqlCommand("SELECT TOP 5 * FROM Fuels;",connection);
+            SqlCommand sqlCommand = new SqlCommand("SELECT TOP 5 * FROM Fuels;", connection);
             SqlDataReader reader = sqlCommand.ExecuteReader();
             if (reader.HasRows) // если есть данные
             {
@@ -167,5 +165,5 @@ namespace ConsoleADONET
         }
 
     }
-    }
+}
 
