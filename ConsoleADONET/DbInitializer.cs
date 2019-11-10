@@ -8,7 +8,7 @@ namespace ConsoleADONET
     {
         public static string Initialize(string connectionString)
         {
-            //Запполнение случайными данными трех предварительно созданных таблиц Fuels, Tanks, Operations
+            //Заполнение случайными данными трех предварительно созданных таблиц Fuels, Tanks, Operations
             //Инициализация перменных                                                 
             int tanks_number = 75;
             int fuels_number = 75;
