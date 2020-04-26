@@ -13,10 +13,14 @@ namespace ConsoleADONET
         {
             //Считывание строки подключения из конфигурационного файла
             string сonnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["toplivoConnectionString"].ConnectionString;
+            
             //Инициализация базы данных
             string InitializeResult = DbInitializer.Initialize(сonnectionString);
+            
             // Создание подключения
             SqlConnection connection = new SqlConnection(сonnectionString);
+            
+            //Выполнение операций 
             try
             {
                 // Открываем подключение для выполенения команд

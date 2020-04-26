@@ -4,7 +4,6 @@
 -- 3. факты совершения операций прихода, расхода топлива (Operations)
 USE master
 CREATE DATABASE toplivo_test
-
 GO
 
 ALTER DATABASE toplivo_test SET RECOVERY SIMPLE

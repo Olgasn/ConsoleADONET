@@ -12,7 +12,7 @@ namespace ConsoleADONET
             //Инициализация перменных                                                 
             int tanks_number = 75;
             int fuels_number = 75;
-            int operations_number = 3000;
+            int operations_number = 10000;
             string tankType;
             string tankMaterial;
             float tankWeight;
@@ -96,6 +96,7 @@ namespace ConsoleADONET
                                 inc_exp.ToString(specifier, culture) + ", " +
                                 "'" + operationdate.ToString(culture) + "');";
                             //отправляет команду на вставку в базу данных
+                            command.CommandText = strSqlValues;
                             command.ExecuteNonQuery();
                         }
 
