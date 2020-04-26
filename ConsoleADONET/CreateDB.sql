@@ -2,15 +2,15 @@
 -- 1. виды топлива (Fuels) 
 -- 2. список емкостей (Tanks)
 -- 3. факты совершения операций прихода, расхода топлива (Operations)
-
-CREATE DATABASE toplivo
+USE master
+CREATE DATABASE toplivo_test
 
 GO
 
-ALTER DATABASE toplivo SET RECOVERY SIMPLE
+ALTER DATABASE toplivo_test SET RECOVERY SIMPLE
 GO
 
-USE toplivo
+USE toplivo_test
 -- ================================================
 -- создание таблиц
 CREATE TABLE dbo.Fuels (FuelID int IDENTITY(1,1) NOT NULL PRIMARY KEY, FuelType nvarchar(50), FuelDensity real) -- виды топлива
