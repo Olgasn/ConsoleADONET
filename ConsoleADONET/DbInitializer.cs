@@ -51,11 +51,11 @@ namespace ConsoleADONET
                         string[] material_voc = { "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун", "Алюминий", "Золото", "Дерево", "Керамика" };//словарь названий материалов емкостей
                         int count_tank_voc = tank_voc.GetLength(0);
                         int count_material_voc = material_voc.GetLength(0);
-                        int tankID;
+                        int tankId;
                         strSql = "INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES ";
-                        for (tankID = 1; tankID <= tanks_number; tankID++)
+                        for (tankId = 1; tankId <= tanks_number; tankId++)
                         {
-                            tankType = "N'" + tank_voc[randObj.Next(count_tank_voc)] + tankID.ToString() + "'";
+                            tankType = "N'" + tank_voc[randObj.Next(count_tank_voc)] + tankId.ToString() + "'";
                             tankMaterial = "N'" + material_voc[randObj.Next(count_material_voc)] + "'";
                             tankWeight = 500 * (float)randObj.NextDouble();
                             tankVolume = 200 * (float)randObj.NextDouble();
@@ -69,11 +69,11 @@ namespace ConsoleADONET
                         //Словарь для Fuels
                         string[] fuel_voc = { "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_" };//словарь названий видов топлива
                         int count_fuel_voc = fuel_voc.GetLength(0);
-                        int fuelID;
+                        int fuelId;
                         strSql = "INSERT INTO Fuels (FuelType, FuelDensity) VALUES";
-                        for (fuelID = 1; fuelID <= fuels_number; fuelID++)
+                        for (fuelId = 1; fuelId <= fuels_number; fuelId++)
                         {
-                            fuelType = "N'" + fuel_voc[randObj.Next(count_fuel_voc)] + fuelID.ToString() + "'";
+                            fuelType = "N'" + fuel_voc[randObj.Next(count_fuel_voc)] + fuelId.ToString() + "'";
                             fuelDensity = 2 * (float)randObj.NextDouble();
                             strSql += "(" + fuelType + ", " + fuelDensity.ToString(specifier, culture) + "), ";
                         }
@@ -84,15 +84,15 @@ namespace ConsoleADONET
                         //Заполнение таблицы операций
                         DateTime operationdate;
                         int inc_exp;
-                        strSql = "INSERT INTO Operations (TankID, FuelID, Inc_Exp, Date) VALUES";
+                        strSql = "INSERT INTO Operations (TankId, FuelId, Inc_Exp, Date) VALUES";
                         string strSqlValues;
-                        for (int operationID = 1; operationID <= operations_number; operationID++)
+                        for (int operationId = 1; operationId <= operations_number; operationId++)
                         {
-                            tankID = randObj.Next(1, tanks_number - 1);
-                            fuelID = randObj.Next(1, fuels_number - 1);
+                            tankId = randObj.Next(1, tanks_number - 1);
+                            fuelId = randObj.Next(1, fuels_number - 1);
                             inc_exp = randObj.Next(200) - 100;
-                            operationdate = today.AddDays(-operationID);
-                            strSqlValues = strSql+ "(" + tankID + ", " + fuelID + ", " + 
+                            operationdate = today.AddDays(-operationId);
+                            strSqlValues = strSql + "(" + tankId + ", " + fuelId + ", " +
                                 inc_exp.ToString(specifier, culture) + ", " +
                                 "'" + operationdate.ToString(culture) + "');";
                             //отправляет команду на вставку в базу данных

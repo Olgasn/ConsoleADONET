@@ -1,93 +1,127 @@
-﻿--    данный скрипт создает базу данных toplivo с тремя таблицами:
--- 1. виды топлива (Fuels) 
--- 2. список емкостей (Tanks)
--- 3. факты совершения операций прихода, расхода топлива (Operations)
-USE master
-CREATE DATABASE toplivo_test
+﻿-- Скрипт создания базы данных toplivo_test с таблицами Fuels, Tanks и Operations
+USE master;
 GO
 
-ALTER DATABASE toplivo_test SET RECOVERY SIMPLE
+-- Создание базы данных
+IF DB_ID('toplivo_test') IS NOT NULL
+    DROP DATABASE toplivo_test;
 GO
 
-USE toplivo_test
+CREATE DATABASE toplivo_test;
+GO
+
+ALTER DATABASE toplivo_test SET RECOVERY SIMPLE;
+GO
+
+USE toplivo_test;
+GO
+
 -- ================================================
--- создание таблиц
-CREATE TABLE dbo.Fuels (FuelID int IDENTITY(1,1) NOT NULL PRIMARY KEY, FuelType nvarchar(50), FuelDensity real) -- виды топлива
-CREATE TABLE dbo.Tanks (TankID int IDENTITY(1,1) NOT NULL PRIMARY KEY, TankType nvarchar(20), TankVolume real, TankWeight real, TankMaterial nvarchar(20)) -- емкости
-CREATE TABLE dbo.Operations (OperationID int IDENTITY(1,1) NOT NULL PRIMARY KEY, FuelID int, TankID int, Inc_Exp real, [Date] date) -- операции
+-- Создание таблиц
+CREATE TABLE Fuels (
+    FuelId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    FuelType NVARCHAR(50),
+    FuelDensity REAL
+); -- Таблица видов топлива
+
+CREATE TABLE Tanks (
+    TankId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    TankType NVARCHAR(20),
+    TankVolume REAL,
+    TankWeight REAL,
+    TankMaterial NVARCHAR(20)
+); -- Таблица емкостей
+
+CREATE TABLE Operations (
+    OperationId INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    FuelId INT,
+    TankId INT,
+    Inc_Exp REAL,
+    [Date] DATE
+); -- Таблица операций
+
 -- Добавление связей между таблицами
-ALTER TABLE dbo.Operations  WITH CHECK ADD  CONSTRAINT FK_Operations_Fuels FOREIGN KEY(FuelID)
-REFERENCES dbo.Fuels (FuelID) ON DELETE CASCADE
-GO
-ALTER TABLE dbo.Operations  WITH CHECK ADD  CONSTRAINT FK_Operations_Tanks FOREIGN KEY(TankID)
-REFERENCES dbo.Tanks (TankID) ON DELETE CASCADE
+ALTER TABLE Operations
+    ADD CONSTRAINT FK_Operations_Fuels FOREIGN KEY (FuelId)
+    REFERENCES Fuels (FuelId) ON DELETE CASCADE;
 GO
 
+ALTER TABLE Operations
+    ADD CONSTRAINT FK_Operations_Tanks FOREIGN KEY (TankId)
+    REFERENCES Tanks (TankId) ON DELETE CASCADE;
+GO
 
 -- ================================================
--- создание представления для отбора данных всех операций
-CREATE VIEW [dbo].[View_AllOperations]
+-- Создание представления для отбора данных всех операций
+CREATE VIEW View_AllOperations AS
+SELECT 
+    o.OperationId,
+    o.FuelId,
+    o.TankId,
+    o.Inc_Exp,
+    o.Date,
+    f.FuelType,
+    t.TankType
+FROM 
+    Operations o
+INNER JOIN 
+    Fuels f ON o.FuelId = f.FuelId
+INNER JOIN 
+    Tanks t ON o.TankId = t.TankId;
+GO
+
+-- ================================================
+-- Создание хранимой процедуры для выбора данных операций
+IF OBJECT_ID('uspGetOperations', 'P') IS NOT NULL
+    DROP PROCEDURE uspGetOperations;
+GO
+
+CREATE PROCEDURE uspGetOperations
+    @FuelId INT = -100, 
+    @FuelType NVARCHAR(50) = '',
+    @TankId INT = -100, 
+    @TankType NVARCHAR(20) = ''
 AS
-SELECT        dbo.Operations.OperationID, dbo.Operations.FuelID, dbo.Operations.TankID, dbo.Operations.Inc_Exp, dbo.Operations.Date, dbo.Fuels.FuelType, 
-                         dbo.Tanks.TankType
-FROM            dbo.Fuels INNER JOIN
-                         dbo.Operations ON dbo.Fuels.FuelID = dbo.Operations.FuelID INNER JOIN
-                         dbo.Tanks ON dbo.Operations.TankID = dbo.Tanks.TankID
-GO
--- ================================================
--- создание хранимой процедуры для выбора данных одной или нескольких операций по заданным параметрам.
+BEGIN
+    SET NOCOUNT ON;
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
+    -- Универсальный запрос с динамическими условиями
+    SELECT * 
+    FROM View_AllOperations
+    WHERE 
+        (@FuelId < 0 OR FuelId = @FuelId) AND
+        (@TankId < 0 OR TankId = @TankId) AND
+        (FuelType LIKE (@FuelType + '%')) AND
+        (TankType LIKE (@TankType + '%'));
+END;
 GO
 
-IF OBJECT_ID ( 'dbo.uspGetOperations', 'P' ) IS NOT NULL 
-    DROP PROCEDURE dbo.uspGetOperations;
+-- Проверяем, существует ли процедура, и удаляем её
+IF OBJECT_ID('uspInsertTanks', 'P') IS NOT NULL
+    DROP PROCEDURE uspInsertTanks;
 GO
-CREATE PROCEDURE dbo.uspGetOperations
-	@FuelID int =-100, 
-    @FuelType nvarchar(50) ='',
-	@TankID int =-100, 
-    @TankType nvarchar(20) =''
-AS 
-    BEGIN
-    
-	if @TankID>0 and @FuelID>0 	
-	SELECT * 
-    FROM dbo.View_AllOperations
-	WHERE (
-	(FuelType Like (@FuelType + '%')) AND 
-	(TankType Like (@TankType + '%')) AND
-	(TankID=@TankID) AND
-    (FuelID=@FuelID)	
-	);	
-	
-	if @TankID>0 and @FuelID<0	
-	SELECT * 
-    FROM dbo.View_AllOperations
-	WHERE (
-	(FuelType Like (@FuelType + '%')) AND 
-	(TankType Like (@TankType + '%')) AND
-	(TankID=@TankID)
-	);	
-	
-	if @TankID<0 and @FuelID>0	
-	SELECT * 
-    FROM dbo.View_AllOperations
-	WHERE (
-	(FuelType Like (@FuelType + '%')) AND 
-	(TankType Like (@TankType + '%')) AND
-	(FuelID=@FuelID)
-	);
-	
-	if @TankID<0 and @FuelID<0	
-	SELECT * 
-    FROM dbo.View_AllOperations
-	WHERE (
-	(FuelType Like (@FuelType + '%')) AND 
-	(TankType Like (@TankType + '%')) 
-	);		
-	
-	END;
+
+-- Создаем хранимую процедуру для вставки записей в таблицу Tanks
+CREATE PROCEDURE uspInsertTanks
+    @TankType NVARCHAR(20),
+    @TankWeight REAL,
+    @TankVolume REAL,
+    @TankMaterial NVARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        -- Вставляем данные в таблицу Tanks
+        INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial)
+        VALUES (@TankType, @TankWeight, @TankVolume, @TankMaterial);
+
+        PRINT 'Запись успешно вставлена в таблицу Tanks.';
+    END TRY
+    BEGIN CATCH
+        -- Обработка ошибок
+        PRINT 'Произошла ошибка при вставке данных в таблицу Tanks.';
+        THROW;
+    END CATCH
+END;
 GO
