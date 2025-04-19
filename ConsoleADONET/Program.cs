@@ -9,13 +9,13 @@ namespace ConsoleADONET
     {
         static void Main(string[] args)
         {
-            // Считывание строки подключения из конфигурационного файла
+            // Считывание строки подключения из конфигурационного файла  
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["toplivoConnectionString"].ConnectionString;
 
-            // Инициализация базы данных
+            // Инициализация базы данных  
             string initializeResult = DbInitializer.Initialize(connectionString);
 
-            // Выполнение операций
+            // Выполнение операций  
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 try
@@ -26,6 +26,12 @@ namespace ConsoleADONET
                     ExecuteAndPrint(connection, Select1, "Выборка данных 1");
                     ExecuteAndPrint(connection, Select2, "Выборка данных 2");
                     ExecuteAndPrint(connection, Select3, "Выборка данных 3");
+                    Console.WriteLine("====== Вставка данных (нажмите любую клавишу) ========");
+                    Console.ReadKey();
+
+                    Console.WriteLine(Insert(connection, "InsertProcedure1"));
+                    Console.WriteLine(Insert(connection, "InsertProcedure2"));
+                    Console.WriteLine(Insert(connection, "InsertProcedure3"));
                 }
                 catch (SqlException ex)
                 {
@@ -33,7 +39,7 @@ namespace ConsoleADONET
                 }
                 finally
                 {
-                    Console.WriteLine("Подключение закрыто...");
+                    Console.WriteLine("Подключение закрыто");
                 }
             }
 
@@ -81,13 +87,13 @@ namespace ConsoleADONET
 
         static IList Select2(SqlConnection connection)
         {
-            // Реализация Select2
+            // Реализация Select2  
             return new List<string>();
         }
 
         static IList Select3(SqlConnection connection)
         {
-            // Реализация Select3
+            // Реализация Select3  
             return new List<string>();
         }
 
@@ -108,7 +114,7 @@ namespace ConsoleADONET
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка вставки: {ex.Message}");
+                    Console.WriteLine($"Ошибка подключения или вставки: {ex.Message}");
                     transaction.Rollback();
                     message = "Ошибка вставки данных.";
                 }
@@ -116,15 +122,15 @@ namespace ConsoleADONET
             return message;
         }
 
-        static string Update(SqlConnection connection)
+        static string Update(SqlConnection connection, string procedureName)
         {
-            // Реализация Update
+            // Реализация Update  
             return "Обновление завершено.";
         }
 
-        static string Delete(SqlConnection connection)
+        static string Delete(SqlConnection connection, string procedureName)
         {
-            // Реализация Delete
+            // Реализация Delete  
             return "Удаление завершено.";
         }
     }
