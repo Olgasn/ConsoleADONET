@@ -1,105 +1,124 @@
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Text;
 
 namespace ConsoleADONET
 {
     public static class DbInitializer
     {
-        public static string Initialize(string connectionString,
-            int tanks_number = 75, int fuels_number = 75, int operations_number = 10000)
+        public static void Initialize(string connectionString,
+            int tanksCount = 100, int fuelsCount = 100, int operationsCount = 10000)
         {
-            string result = "";
+            using SqlConnection connection = new SqlConnection(connectionString);
+            connection.Open();
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            // Если хотя бы одна таблица пуста — очищаем все три и заполняем заново,
+            // чтобы FK-ссылки оставались консистентными.
+            if (AllTablesPopulated(connection))
+                return;
+
+            using SqlTransaction transaction = connection.BeginTransaction();
+            using SqlCommand cmd = connection.CreateCommand();
+            cmd.Transaction = transaction;
+
+            try
             {
-                connection.Open();
+                // TRUNCATE быстрее DELETE и сбрасывает счётчик IDENTITY.
+                // Порядок: сначала дочерняя таблица (FK), затем родительские.
+                cmd.CommandText = "TRUNCATE TABLE Operations; TRUNCATE TABLE Fuels; TRUNCATE TABLE Tanks;";
+                cmd.ExecuteNonQuery();
 
-                // ── Проверяем все три таблицы ─────────────────────────────────
-                // Если хотя бы одна пуста (например, после ручной очистки),
-                // очищаем все три и заполняем заново, чтобы данные были консистентны.
-                SqlCommand countCmd = connection.CreateCommand();
+                var rng     = new Random(1);
+                var culture = CultureInfo.InvariantCulture;
+                var today   = DateTime.Now.Date;
 
-                countCmd.CommandText = "SELECT COUNT(*) FROM Fuels;";
-                int fuelsCount = (int)countCmd.ExecuteScalar();
+                // ── Tanks ─────────────────────────────────────────────────────
+                string[] tankVoc = [
+                    "Цистерна_", "Ведро_", "Бак_", "Фляга_", "Стакан_",
+                    "Резервуар_", "Канистра_", "Бочка_", "Бидон_", "Баллон_",
+                    "Контейнер_", "Колба_", "Танкер_", "Отстойник_", "Накопитель_"
+                ];
+                string[] materialVoc = [
+                    "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун",
+                    "Золото", "Дерево", "Керамика", "Стекло", "Медь",
+                    "Титан", "Нержавейка", "Бронза", "Полипропилен", "Фибергласс"
+                ];
 
-                countCmd.CommandText = "SELECT COUNT(*) FROM Tanks;";
-                int tanksCount = (int)countCmd.ExecuteScalar();
-
-                countCmd.CommandText = "SELECT COUNT(*) FROM Operations;";
-                int opsCount = (int)countCmd.ExecuteScalar();
-
-                if (fuelsCount > 0 && tanksCount > 0 && opsCount > 0)
-                    return result; // все таблицы заполнены — инициализация не нужна
-
-                SqlTransaction transaction = connection.BeginTransaction();
-                SqlCommand command = connection.CreateCommand();
-                command.Transaction = transaction;
-
-                try
+                var sb = new StringBuilder("INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES ");
+                for (int i = 1; i <= tanksCount; i++)
                 {
-                    // Очищаем в правильном порядке: сначала дочерняя (FK), затем родительские
-                    command.CommandText = "DELETE FROM Operations; DELETE FROM Fuels; DELETE FROM Tanks;";
-                    command.ExecuteNonQuery();
-
-                    Random randObj = new Random(1);
-                    string specifier = "G";
-                    CultureInfo culture = CultureInfo.InvariantCulture;
-                    DateTime today = DateTime.Now.Date;
-
-                    // ── Заполнение Tanks ──────────────────────────────────────
-                    string[] tank_voc     = { "Цистерна_", "Ведро_", "Бак_", "Фляга_", "Стакан_" };
-                    string[] material_voc = { "Сталь", "Платина", "Алюминий", "ПЭТ", "Чугун", "Золото", "Дерево", "Керамика" };
-
-                    string strSql = "INSERT INTO Tanks (TankType, TankWeight, TankVolume, TankMaterial) VALUES ";
-                    for (int tankId = 1; tankId <= tanks_number; tankId++)
-                    {
-                        string tankType     = "N'" + tank_voc[randObj.Next(tank_voc.Length)]     + tankId + "'";
-                        string tankMaterial = "N'" + material_voc[randObj.Next(material_voc.Length)] + "'";
-                        float  tankWeight   = 500 * (float)randObj.NextDouble();
-                        float  tankVolume   = 200 * (float)randObj.NextDouble();
-                        strSql += $"({tankType}, {tankWeight.ToString(specifier, culture)}, {tankVolume.ToString(specifier, culture)}, {tankMaterial}), ";
-                    }
-                    command.CommandText = strSql.TrimEnd(',', ' ') + ";";
-                    command.ExecuteNonQuery();
-
-                    // ── Заполнение Fuels ──────────────────────────────────────
-                    string[] fuel_voc = { "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_" };
-
-                    strSql = "INSERT INTO Fuels (FuelType, FuelDensity) VALUES ";
-                    for (int fuelId = 1; fuelId <= fuels_number; fuelId++)
-                    {
-                        string fuelType    = "N'" + fuel_voc[randObj.Next(fuel_voc.Length)] + fuelId + "'";
-                        float  fuelDensity = 2 * (float)randObj.NextDouble();
-                        strSql += $"({fuelType}, {fuelDensity.ToString(specifier, culture)}), ";
-                    }
-                    command.CommandText = strSql.TrimEnd(',', ' ') + ";";
-                    command.ExecuteNonQuery();
-
-                    // ── Заполнение Operations (по одной строке — FK-ключи из уже вставленных) ──
-                    for (int opId = 1; opId <= operations_number; opId++)
-                    {
-                        int      tankId    = randObj.Next(1, tanks_number);
-                        int      fuelId    = randObj.Next(1, fuels_number);
-                        int      inc_exp   = randObj.Next(200) - 100;
-                        DateTime opDate    = today.AddDays(-opId);
-                        command.CommandText =
-                            $"INSERT INTO Operations (TankId, FuelId, Inc_Exp, Date) VALUES " +
-                            $"({tankId}, {fuelId}, {inc_exp.ToString(specifier, culture)}, '{opDate.ToString(culture)}');";
-                        command.ExecuteNonQuery();
-                    }
-
-                    transaction.Commit();
-                    Console.WriteLine($"База данных инициализирована: {tanks_number} ёмкостей, {fuels_number} видов топлива, {operations_number} операций.");
+                    string type     = "N'" + tankVoc[rng.Next(tankVoc.Length)] + i + "'";
+                    string material = "N'" + materialVoc[rng.Next(materialVoc.Length)] + "'";
+                    float  weight   = 500 * (float)rng.NextDouble();
+                    float  volume   = 200 * (float)rng.NextDouble();
+                    sb.Append($"({type}, {weight.ToString("G", culture)}, {volume.ToString("G", culture)}, {material}), ");
                 }
-                catch (Exception ex)
+                cmd.CommandText = sb.ToString().TrimEnd(',', ' ') + ";";
+                cmd.ExecuteNonQuery();
+
+                // ── Fuels ─────────────────────────────────────────────────────
+                string[] fuelVoc = [
+                    "Нефть_", "Бензин_", "Керосин_", "Мазут_", "Спирт_", "Водород_",
+                    "Дизель_", "Пропан_", "Бутан_", "Метан_", "Этанол_",
+                    "Авиатопливо_", "Лигроин_", "Биодизель_", "Синтетическое_"
+                ];
+
+                sb.Clear();
+                sb.Append("INSERT INTO Fuels (FuelType, FuelDensity) VALUES ");
+                for (int i = 1; i <= fuelsCount; i++)
                 {
-                    result = ex.Message;
-                    Console.WriteLine($"Ошибка при инициализации: {result}");
-                    transaction.Rollback();
+                    string type    = "N'" + fuelVoc[rng.Next(fuelVoc.Length)] + i + "'";
+                    float  density = 2 * (float)rng.NextDouble();
+                    sb.Append($"({type}, {density.ToString("G", culture)}), ");
                 }
+                cmd.CommandText = sb.ToString().TrimEnd(',', ' ') + ";";
+                cmd.ExecuteNonQuery();
+
+                // ── Operations (batch INSERT по 1000 строк) ───────────────────
+                // SQL Server допускает не более 1000 строк в одном VALUES.
+                const int batchSize = 1000;
+                var rows = new List<string>(batchSize);
+                for (int i = 1; i <= operationsCount; i++)
+                {
+                    // Next(1, n+1) — включает крайний ID (т.к. IDENTITY начинается с 1).
+                    int      tankId = rng.Next(1, tanksCount + 1);
+                    int      fuelId = rng.Next(1, fuelsCount + 1);
+                    int      incExp = rng.Next(200) - 100;
+                    DateTime opDate = today.AddDays(-i);
+                    rows.Add($"({tankId}, {fuelId}, {incExp.ToString("G", culture)}, '{opDate.ToString(culture)}')");
+
+                    if (rows.Count == batchSize || i == operationsCount)
+                    {
+                        cmd.CommandText =
+                            "INSERT INTO Operations (TankId, FuelId, Inc_Exp, Date) VALUES " +
+                            string.Join(", ", rows) + ";";
+                        cmd.ExecuteNonQuery();
+                        rows.Clear();
+                    }
+                }
+
+                transaction.Commit();
+                Console.WriteLine($"База данных инициализирована: {tanksCount} ёмкостей, {fuelsCount} видов топлива, {operationsCount} операций.");
             }
-            return result;
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private static bool AllTablesPopulated(SqlConnection connection)
+        {
+            using SqlCommand cmd = connection.CreateCommand();
+            cmd.CommandText =
+                "SELECT (SELECT COUNT(*) FROM Fuels), " +
+                       "(SELECT COUNT(*) FROM Tanks), " +
+                       "(SELECT COUNT(*) FROM Operations);";
+            using SqlDataReader r = cmd.ExecuteReader();
+            r.Read();
+            return (int)r[0] > 0 && (int)r[1] > 0 && (int)r[2] > 0;
         }
     }
 }
