@@ -1,6 +1,6 @@
 # ConsoleADONET
 
-Учебный проект, демонстрирующий основные приёмы работы с реляционной базой данных Microsoft SQL Server посредством технологии ADO.NET в среде .NET Framework версии 4.8.
+Учебный проект, демонстрирующий основные приёмы работы с реляционной базой данных Microsoft SQL Server посредством технологии ADO.NET в среде .NET 10. Доступ к данным реализован через провайдер `Microsoft.Data.SqlClient`.
 
 ---
 
@@ -151,15 +151,22 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -i ConsoleADONET/CreateDB.sql
 
 ```xml
 <add name="toplivoConnectionString"
-     connectionString="Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=toplivo_test;Integrated Security=True"
-     providerName="System.Data.SqlClient"/>
+     connectionString="Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=toplivo_test;Integrated Security=True;Encrypt=False"
+     providerName="Microsoft.Data.SqlClient"/>
 ```
 
-При необходимости значение атрибута `Data Source` следует изменить в соответствии с параметрами используемого экземпляра SQL Server.
+При необходимости значение атрибута `Data Source` следует изменить в соответствии с параметрами используемого экземпляра SQL Server. Параметр `Encrypt=False` указан потому, что провайдер `Microsoft.Data.SqlClient` по умолчанию шифрует соединение, а локальный экземпляр LocalDB сертификата шифрования не предоставляет.
 
 ### Шаг 3. Сборка и запуск
 
-Решение открывается в среде Microsoft Visual Studio посредством файла `ConsoleADONET.sln`. Запуск производится стандартным способом (клавиша `F5`). Приложение выполняет демонстрационные операции последовательно, ожидая нажатия любой клавиши перед каждым следующим шагом.
+Проект собирается и запускается через интерфейс командной строки `dotnet` (требуется пакет SDK для .NET 10):
+
+```
+dotnet build ConsoleADONET.sln -c Release
+dotnet run --project ConsoleADONET/ConsoleADONET.csproj -c Release
+```
+
+Также решение открывается в среде Microsoft Visual Studio посредством файла `ConsoleADONET.sln` и запускается клавишей `F5`. Приложение выполняет демонстрационные операции последовательно, ожидая нажатия любой клавиши перед каждым следующим шагом.
 
 ---
 
@@ -184,15 +191,47 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -i ConsoleADONET/CreateDB.sql
 ```
 ConsoleADONET/
 ├── ConsoleADONET.sln
-└── ConsoleADONET/
-    ├── App.config                   # Строка подключения к базе данных
-    ├── CreateDB.sql                 # Скрипт создания базы данных, таблиц, представления и хранимых процедур
-    ├── DbInitializer.cs             # Класс первоначального заполнения таблиц тестовыми данными
-    ├── Program.cs                   # Точка входа в приложение; определяет последовательность демонстраций
-    ├── Models/
-    │   ├── Tank.cs                  # Класс, представляющий запись об ёмкости
-    │   └── Fuel.cs                  # Класс, представляющий запись о виде топлива
-    └── Data/
-        ├── CommandExamples.cs       # Примеры операций с использованием SqlCommand
-        └── DataAdapterExamples.cs   # Примеры операций с использованием SqlDataAdapter
+├── .github/
+│   └── workflows/
+│       └── ci.yml                   # Конвейер CI: сборка и тесты на GitHub Actions
+├── ConsoleADONET/                   # Основной проект (.NET 10, консольное приложение)
+│   ├── App.config                   # Строка подключения к базе данных
+│   ├── CreateDB.sql                 # Скрипт создания базы данных, таблиц, представления и хранимых процедур
+│   ├── DbInitializer.cs             # Класс первоначального заполнения таблиц тестовыми данными
+│   ├── Program.cs                   # Точка входа в приложение; определяет последовательность демонстраций
+│   ├── Models/
+│   │   ├── Tank.cs                  # Класс, представляющий запись об ёмкости
+│   │   └── Fuel.cs                  # Класс, представляющий запись о виде топлива
+│   └── Data/
+│       ├── CommandExamples.cs       # Примеры операций с использованием SqlCommand
+│       └── DataAdapterExamples.cs   # Примеры операций с использованием SqlDataAdapter
+└── ConsoleADONET.Tests/             # Проект модульных и интеграционных тестов (MSTest)
+    ├── ModelTests.cs                # Модульные тесты моделей Fuel и Tank (без базы данных)
+    ├── TestDatabase.cs             # Инфраструктура интеграционных тестов
+    ├── DbInitializerTests.cs       # Интеграционные тесты заполнения базы данных
+    ├── CommandExamplesTests.cs     # Интеграционные тесты примеров на SqlCommand
+    └── DataAdapterExamplesTests.cs # Интеграционные тесты примеров на SqlDataAdapter
 ```
+
+---
+
+## Тестирование и непрерывная интеграция
+
+### Тесты
+
+Тесты расположены в проекте `ConsoleADONET.Tests` (платформа MSTest) и делятся на две категории:
+
+- **Модульные** (`ModelTests`) — проверяют форматирование и свойства моделей `Fuel` и `Tank`. Не требуют базы данных и выполняются всегда.
+- **Интеграционные** (`DbInitializerTests`, `CommandExamplesTests`, `DataAdapterExamplesTests`) — проверяют заполнение базы и работу примеров доступа к данным на реальном экземпляре SQL Server. Схема создаётся автоматически по `CreateDB.sql`.
+
+Запуск всех тестов:
+
+```
+dotnet test ConsoleADONET.sln -c Release
+```
+
+Строка подключения для интеграционных тестов берётся из переменной окружения `TEST_CONNECTION_STRING`; при её отсутствии используется LocalDB и отдельная база `toplivo_citest` (рабочая база `toplivo_test` при этом не затрагивается). Если SQL Server недоступен, интеграционные тесты не падают, а помечаются как пропущенные (`Inconclusive`) — модульные тесты при этом всё равно выполняются.
+
+### GitHub Actions
+
+Конвейер [`.github/workflows/ci.yml`](.github/workflows/ci.yml) на каждый `push` и `pull request` поднимает контейнер с Microsoft SQL Server, собирает решение на .NET 10 и прогоняет все тесты, публикуя результаты как артефакт сборки.

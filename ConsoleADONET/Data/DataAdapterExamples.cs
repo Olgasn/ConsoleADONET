@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace ConsoleADONET.Data
 {
@@ -128,8 +128,11 @@ namespace ConsoleADONET.Data
         public static string DemoSqlCommandBuilder(SqlConnection connection)
         {
             // SELECT содержит FuelId (PK) — обязательное условие для CommandBuilder
+            // N-префикс обязателен: без него строковый литерал — VARCHAR, и кириллица
+            // на не-кириллической кодовой странице БД (напр. SQL_Latin1_General_CP1) превратится
+            // в «?», условие не совпадёт, а UPDATE/DELETE молча затронут 0 строк.
             SqlDataAdapter adapter = new SqlDataAdapter(
-                "SELECT FuelId, FuelType, FuelDensity FROM Fuels WHERE FuelType = 'ТестCB';",
+                "SELECT FuelId, FuelType, FuelDensity FROM Fuels WHERE FuelType = N'ТестCB';",
                 connection);
 
             // CommandBuilder привязывается к адаптеру и генерирует команды лениво (при первом вызове)
@@ -273,7 +276,7 @@ namespace ConsoleADONET.Data
         public static string UpdateViaDataAdapter(SqlConnection connection)
         {
             SqlDataAdapter adapter = new SqlDataAdapter(
-                "SELECT * FROM Tanks WHERE TankType = 'Цистерна_СП';",
+                "SELECT * FROM Tanks WHERE TankType = N'Цистерна_СП';",
                 connection);
 
             adapter.UpdateCommand = new SqlCommand(SqlUpdateTank, connection);
@@ -310,7 +313,7 @@ namespace ConsoleADONET.Data
         public static string DeleteViaDataAdapter(SqlConnection connection)
         {
             SqlDataAdapter adapter = new SqlDataAdapter(
-                "SELECT * FROM Tanks WHERE TankType IN ('Цистерна_СП', 'Фляга_DA');",
+                "SELECT * FROM Tanks WHERE TankType IN (N'Цистерна_СП', N'Фляга_DA');",
                 connection);
 
             adapter.DeleteCommand = new SqlCommand(SqlDeleteTank, connection);

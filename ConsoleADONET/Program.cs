@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using ConsoleADONET.Data;
 
 namespace ConsoleADONET
@@ -13,6 +13,10 @@ namespace ConsoleADONET
     {
         static void Main(string[] args)
         {
+            // На .NET 10 кодировка консоли Windows по умолчанию не UTF-8 — задаём явно,
+            // иначе кириллица в выводе превратится в «?».
+            try { Console.OutputEncoding = System.Text.Encoding.UTF8; } catch { /* нет консоли */ }
+
             // Считывает строку подключения из App.config (ключ "toplivoConnectionString")
             string connectionString = System.Configuration.ConfigurationManager
                 .ConnectionStrings["toplivoConnectionString"].ConnectionString;

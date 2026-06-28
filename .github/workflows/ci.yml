@@ -1,0 +1,67 @@
+name: CI
+
+# Сборка проекта и прогон тестов на каждый push и pull request.
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 10)
+    runs-on: ubuntu-latest
+
+    # Интеграционным тестам нужен SQL Server. Поднимаем его сервис-контейнером:
+    # на Linux это надёжнее LocalDB, а проект на .NET 10 кроссплатформенный.
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Your_strong_Pass123"
+        ports:
+          - 1433:1433
+        # Job стартует только когда SQL Server готов принимать подключения.
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Your_strong_Pass123 -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 30s
+
+    env:
+      # Тесты создадут базу toplivo_citest по CreateDB.sql и заполнят её сами.
+      TEST_CONNECTION_STRING: "Server=localhost,1433;Database=toplivo_citest;User ID=sa;Password=Your_strong_Pass123;Encrypt=False;TrustServerCertificate=True"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore ConsoleADONET.sln
+
+      - name: Build
+        run: dotnet build ConsoleADONET.sln -c Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test ConsoleADONET.sln -c Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --logger "console;verbosity=normal"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**
+          if-no-files-found: warn
