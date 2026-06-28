@@ -13,8 +13,6 @@ namespace ConsoleADONET
     {
         static void Main(string[] args)
         {
-            // На .NET 10 кодировка консоли Windows по умолчанию не UTF-8 — задаём явно,
-            // иначе кириллица в выводе превратится в «?».
             try { Console.OutputEncoding = System.Text.Encoding.UTF8; } catch { /* нет консоли */ }
 
             // Считывает строку подключения из App.config (ключ "toplivoConnectionString")

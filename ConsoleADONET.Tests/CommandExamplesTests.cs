@@ -18,7 +18,7 @@ namespace ConsoleADONET.Tests
         public static void SeedDatabase(TestContext _)
         {
             // ClassInitialize выполняется до проверки доступности в TestInitialize —
-            // поэтому при недоступной базе просто выходим, тесты пометятся Inconclusive.
+            // поэтому при недоступной базе выходим, тесты пометятся Inconclusive.
             if (!TestDatabase.IsAvailable)
                 return;
 
