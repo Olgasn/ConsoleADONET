@@ -1,5 +1,7 @@
 # ConsoleADONET
 
+[![CI](https://github.com/Olgasn/ConsoleADONET/actions/workflows/ci.yml/badge.svg)](https://github.com/Olgasn/ConsoleADONET/actions/workflows/ci.yml)
+
 Учебный проект, демонстрирующий основные приёмы работы с реляционной базой данных Microsoft SQL Server посредством технологии ADO.NET в среде .NET 10. Доступ к данным реализован через провайдер `Microsoft.Data.SqlClient`.
 
 ---
